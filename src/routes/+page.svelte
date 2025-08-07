@@ -29,8 +29,8 @@
 	let newDirectiveLabel = $state('');
 	let newDirectiveName = $state('');
 
-	// Directive configurations
-	let directiveConfigs = $state([
+	// Default directive configurations (immutable reference)
+	const defaultDirectiveConfigs = [
 		{ key: 'default-src', label: 'Default Source' },
 		{ key: 'connect-src', label: 'Connect Source' },
 		{ key: 'font-src', label: 'Font Source' },
@@ -44,7 +44,10 @@
 		{ key: 'style-src', label: 'Style Source' },
 		{ key: 'style-src-elem', label: 'Style Source Element' },
 		{ key: 'frame-ancestors', label: 'Frame Ancestors' }
-	]);
+	];
+
+	// Directive configurations (mutable state)
+	let directiveConfigs = $state([...defaultDirectiveConfigs]);
 
 	// LocalStorage functions
 	const STORAGE_KEY = 'csp-generator-data';
@@ -203,6 +206,59 @@
 			showAddDirective = false;
 		}
 	}
+
+	function removeCustomDirective(directiveKey: string) {
+		// Check if it's a default directive (cannot be removed)
+		if (defaultDirectiveConfigs.some((config) => config.key === directiveKey)) {
+			alert('Cannot remove default directives!');
+			return;
+		}
+
+		// Remove from directiveConfigs
+		directiveConfigs = directiveConfigs.filter((config) => config.key !== directiveKey);
+
+		// Remove from directives state
+		delete directives[directiveKey as keyof typeof directives];
+
+		// If this was the selected directive, reset selection
+		if (selectedDirective === directiveKey) {
+			selectedDirective = '';
+		}
+
+		// Save to localStorage
+		saveToLocalStorage();
+	}
+
+	function resetToDefaults() {
+		if (confirm('This will remove all custom directives and clear all values. Are you sure?')) {
+			// Reset to default directives only
+			directiveConfigs = [...defaultDirectiveConfigs];
+
+			// Reset directives state to defaults with empty arrays
+			directives = {
+				'default-src': [],
+				'connect-src': [],
+				'font-src': [],
+				'frame-src': [],
+				'img-src': [],
+				'media-src': [],
+				'object-src': [],
+				'script-src': [],
+				'script-src-elem': [],
+				'script-src-attr': [],
+				'style-src': [],
+				'style-src-elem': [],
+				'frame-ancestors': []
+			};
+
+			// Reset other state
+			selectedDirective = '';
+			generatedCSP = '';
+
+			// Save to localStorage
+			saveToLocalStorage();
+		}
+	}
 </script>
 
 <svelte:head>
@@ -268,22 +324,11 @@
 					</Select.Root>
 				</div>
 
-				{#if selectedDirective && selectedDirective !== ''}
+				{#if selectedDirective}
 					<!-- Single Directive View -->
 					{@const config = directiveConfigs.find((c) => c.key === selectedDirective)}
 					{#if config}
-						<DirectiveInput
-							label={config.label}
-							directive={config.key}
-							sources={directives[config.key as keyof typeof directives]}
-							onAdd={(source) => addSource(config.key, source)}
-							onRemove={(index) => removeSource(config.key, index)}
-						/>
-					{/if}
-				{:else}
-					<!-- All Directives View -->
-					<div class="max-h-96 space-y-4 overflow-y-auto">
-						{#each directiveConfigs as config}
+						<div class="relative">
 							<DirectiveInput
 								label={config.label}
 								directive={config.key}
@@ -291,6 +336,41 @@
 								onAdd={(source) => addSource(config.key, source)}
 								onRemove={(index) => removeSource(config.key, index)}
 							/>
+							{#if !defaultDirectiveConfigs.some((defaultConfig) => defaultConfig.key === config.key)}
+								<button
+									type="button"
+									class="absolute top-0 right-0 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white transition-colors hover:bg-red-600"
+									title="Remove custom directive"
+									onclick={() => removeCustomDirective(config.key)}
+								>
+									×
+								</button>
+							{/if}
+						</div>
+					{/if}
+				{:else}
+					<!-- All Directives View -->
+					<div class="max-h-96 space-y-4 overflow-y-auto">
+						{#each directiveConfigs as config (config.key)}
+							<div class="relative">
+								<DirectiveInput
+									label={config.label}
+									directive={config.key}
+									sources={directives[config.key as keyof typeof directives]}
+									onAdd={(source) => addSource(config.key, source)}
+									onRemove={(index) => removeSource(config.key, index)}
+								/>
+								{#if !defaultDirectiveConfigs.some((defaultConfig) => defaultConfig.key === config.key)}
+									<button
+										type="button"
+										class="absolute top-0 right-2 flex h-6 w-6 items-center justify-center text-lg font-bold text-red-200 transition-colors hover:text-red-600"
+										title="Remove custom directive"
+										onclick={() => removeCustomDirective(config.key)}
+									>
+										×
+									</button>
+								{/if}
+							</div>
 						{/each}
 
 						<!-- Add Custom Directive Section -->
@@ -370,57 +450,72 @@
 				{/if}
 
 				<div class="mt-6 border-t border-neutral-border pt-6">
-					<div class="flex gap-3">
-						<Dialog.Root bind:open={importDialogOpen}>
-							<Dialog.Trigger
-								class="flex-1 rounded-md border border-brand-primary bg-transparent px-6 py-3 font-medium text-brand-primary transition-colors hover:bg-brand-primary hover:text-neutral-950 focus:ring-2 focus:ring-brand-primary focus:ring-offset-2 focus:outline-none"
-							>
-								Import CSP
-							</Dialog.Trigger>
-							<Dialog.Portal>
-								<Dialog.Overlay class="fixed inset-0 z-40 bg-black/50" />
-								<Dialog.Content
-									class="fixed top-1/2 left-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-lg border border-neutral-border bg-neutral-50 p-6 shadow-lg"
-								>
-									<Dialog.Title class="mb-2 text-lg font-semibold text-default-font">
-										Import Existing CSP
-									</Dialog.Title>
-									<Dialog.Description class="mb-4 text-sm text-subtext-color">
-										Paste your existing Content Security Policy below to import and edit it.
-									</Dialog.Description>
-
-									<textarea
-										bind:value={importCSPText}
-										placeholder="Paste your CSP here...\n\nExample:\ndefault-src 'self'; script-src 'self' https://example.com; style-src 'self' 'unsafe-inline';"
-										class="h-32 w-full resize-none rounded-md border border-neutral-border bg-neutral-100 px-3 py-2 text-sm text-default-font placeholder:text-neutral-400 focus:border-brand-primary focus:ring-2 focus:ring-brand-primary focus:outline-none"
-									></textarea>
-
-									<div class="mt-6 flex justify-end gap-3">
-										<Dialog.Close
-											class="px-4 py-2 text-sm font-medium text-subtext-color transition-colors hover:text-default-font focus:outline-none"
-										>
-											Cancel
-										</Dialog.Close>
-										<button
-											onclick={handleImportCSP}
-											class="rounded-md bg-brand-primary px-4 py-2 text-sm font-medium text-neutral-950 transition-colors hover:bg-brand-700 focus:ring-2 focus:ring-brand-primary focus:ring-offset-2 focus:outline-none"
-										>
-											Import
-										</button>
-									</div>
-								</Dialog.Content>
-							</Dialog.Portal>
-						</Dialog.Root>
-
+					<div class="flex flex-wrap gap-2">
 						<button
+							class="rounded-lg bg-brand-600 px-4 py-2 text-white transition-colors hover:bg-brand-700"
 							onclick={generateCSP}
-							class="flex-1 rounded-md bg-success-600 px-6 py-3 font-medium text-neutral-950 transition-colors hover:bg-success-700 focus:ring-2 focus:ring-success-500 focus:ring-offset-2 focus:outline-none"
 						>
 							Generate CSP
+						</button>
+						<button
+							class="rounded-lg bg-neutral-600 px-4 py-2 text-white transition-colors hover:bg-neutral-700"
+							onclick={clearAll}
+						>
+							Clear All
+						</button>
+						<button
+							class="rounded-lg bg-success-600 px-4 py-2 text-white transition-colors hover:bg-success-700"
+							onclick={() => (importDialogOpen = true)}
+						>
+							Import CSP
+						</button>
+						<button
+							class="rounded-lg bg-red-600 px-4 py-2 text-white transition-colors hover:bg-red-700"
+							onclick={resetToDefaults}
+							title="Remove all custom directives and clear all values"
+						>
+							Reset All
 						</button>
 					</div>
 				</div>
 			</div>
+
+			<!-- Import CSP Dialog -->
+			<Dialog.Root bind:open={importDialogOpen}>
+				<Dialog.Portal>
+					<Dialog.Overlay class="fixed inset-0 z-40 bg-black/50" />
+					<Dialog.Content
+						class="fixed top-1/2 left-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-lg border border-neutral-border bg-neutral-50 p-6 shadow-lg"
+					>
+						<Dialog.Title class="mb-2 text-lg font-semibold text-default-font">
+							Import Existing CSP
+						</Dialog.Title>
+						<Dialog.Description class="mb-4 text-sm text-subtext-color">
+							Paste your existing Content Security Policy below to import and edit it.
+						</Dialog.Description>
+
+						<textarea
+							bind:value={importCSPText}
+							placeholder="Paste your CSP here...\n\nExample:\ndefault-src 'self'; script-src 'self' https://example.com; style-src 'self' 'unsafe-inline';"
+							class="h-32 w-full resize-none rounded-md border border-neutral-border bg-neutral-100 px-3 py-2 text-sm text-default-font placeholder:text-neutral-400 focus:border-brand-primary focus:ring-2 focus:ring-brand-primary focus:outline-none"
+						></textarea>
+
+						<div class="mt-6 flex justify-end gap-3">
+							<Dialog.Close
+								class="px-4 py-2 text-sm font-medium text-subtext-color transition-colors hover:text-default-font focus:outline-none"
+							>
+								Cancel
+							</Dialog.Close>
+							<button
+								onclick={handleImportCSP}
+								class="rounded-md bg-brand-primary px-4 py-2 text-sm font-medium text-neutral-950 transition-colors hover:bg-brand-700 focus:ring-2 focus:ring-brand-primary focus:ring-offset-2 focus:outline-none"
+							>
+								Import
+							</button>
+						</div>
+					</Dialog.Content>
+				</Dialog.Portal>
+			</Dialog.Root>
 
 			<!-- Right Column: Generated CSP -->
 			<div class="rounded-lg border border-neutral-border bg-neutral-50 p-6 shadow-md">
