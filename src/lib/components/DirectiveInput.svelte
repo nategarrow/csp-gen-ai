@@ -5,9 +5,11 @@
 		sources: string[];
 		onAdd: (source: string) => void;
 		onRemove: (index: number) => void;
+		truncated?: boolean;
+		selectedDirective?: string;
 	}
 
-	let { label, directive, sources, onAdd, onRemove }: Props = $props();
+	let { label, directive, sources, onAdd, onRemove, selectedDirective }: Props = $props();
 	let inputValue = $state('');
 
 	function handleKeydown(event: KeyboardEvent) {
@@ -37,7 +39,7 @@
 			bind:value={inputValue}
 			onkeydown={handleKeydown}
 			placeholder="Enter source (e.g., https://example.com, 'self', 'unsafe-inline')"
-			class="flex-1 rounded-md border border-neutral-border bg-neutral-100 px-3 py-2 text-default-font placeholder:text-neutral-400 shadow-sm focus:border-brand-primary focus:ring-2 focus:ring-brand-primary focus:outline-none"
+			class="flex-1 rounded-md border border-neutral-border bg-neutral-100 px-3 py-2 text-default-font shadow-sm placeholder:text-neutral-400 focus:border-brand-primary focus:ring-2 focus:ring-brand-primary focus:outline-none"
 		/>
 		<button
 			onclick={handleAdd}
@@ -48,10 +50,16 @@
 	</div>
 
 	{#if sources.length > 0}
-		<div class="space-y-1">
+		<div
+			class={!selectedDirective
+				? 'max-h-40 space-y-1 overflow-auto'
+				: ' max-h-96 space-y-1 overflow-auto'}
+		>
 			{#each sources as source, index}
-				<div class="flex items-center justify-between bg-neutral-100 px-3 py-2 rounded-md border border-neutral-border">
-					<code class="text-sm text-default-font font-monospace-body">{source}</code>
+				<div
+					class="flex items-center justify-between rounded-md border border-neutral-border bg-neutral-100 px-3 py-2"
+				>
+					<code class="font-monospace-body text-sm text-default-font">{source}</code>
 					<button
 						onclick={() => onRemove(index)}
 						class="text-error-600 hover:text-error-700 focus:outline-none"

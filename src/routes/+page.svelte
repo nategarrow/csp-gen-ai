@@ -140,8 +140,11 @@
 	}
 
 	function parseCSP(cspString: string) {
-		// Clear existing directives
-		clearAll();
+		// Clear existing directives (but don't save to localStorage yet)
+		for (const key of Object.keys(directives)) {
+			directives[key as keyof typeof directives] = [];
+		}
+		generatedCSP = '';
 
 		// Remove 'Content-Security-Policy:' prefix if present
 		const cleanCSP = cspString.replace(/^Content-Security-Policy:\s*/i, '').trim();
@@ -165,6 +168,9 @@
 				directives[directiveName as keyof typeof directives] = sources;
 			}
 		}
+
+		// Save the imported values to localStorage
+		saveToLocalStorage();
 	}
 
 	function handleImportCSP() {
@@ -333,14 +339,17 @@
 								label={config.label}
 								directive={config.key}
 								sources={directives[config.key as keyof typeof directives]}
-								onAdd={(source) => addSource(config.key, source)}
-								onRemove={(index) => removeSource(config.key, index)}
+								onAdd={(source: string) => addSource(config.key, source)}
+								onRemove={(index: number) => removeSource(config.key, index)}
+								truncated={false}
+                {selectedDirective}
 							/>
 							{#if !defaultDirectiveConfigs.some((defaultConfig) => defaultConfig.key === config.key)}
 								<button
 									type="button"
-									class="absolute top-0 right-0 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white transition-colors hover:bg-red-600"
-									title="Remove custom directive"
+									class="absolute top								onAdd={(source) => addSource(config.key, source)}
+								onRemove={(index) => removeSource(config.key, index)}
+ustom directive"
 									onclick={() => removeCustomDirective(config.key)}
 								>
 									×
