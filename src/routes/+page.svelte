@@ -106,8 +106,15 @@
 	});
 
 	function addSource(directive: string, source: string) {
+		const existingSources = directives[directive as keyof typeof directives];
+		
+		// Check for duplicates (case-insensitive)
+		if (existingSources.some(existingSource => existingSource.toLowerCase() === source.toLowerCase())) {
+			return; // Don't add duplicate
+		}
+		
 		directives[directive as keyof typeof directives] = [
-			...directives[directive as keyof typeof directives],
+			...existingSources,
 			source
 		];
 		saveToLocalStorage();
@@ -544,7 +551,7 @@ ustom directive"
 					<div class="mb-4">
 						<div class="mb-2 block text-sm font-medium text-subtext-color">HTML Meta Tag:</div>
 						<pre
-							class="overflow-x-auto rounded-md border border-neutral-border bg-neutral-100 p-4 font-monospace-body text-sm break-all whitespace-pre-wrap text-default-font">&lt;meta http-equiv="Content-Security-Policy" content="{generatedCSP}"&gt;</pre>
+							class="max-h-192 overflow-x-auto rounded-md border border-neutral-border bg-neutral-100 p-4 font-monospace-body text-sm break-all whitespace-pre-wrap text-default-font">&lt;meta http-equiv="Content-Security-Policy" content="{generatedCSP}"&gt;</pre>
 					</div>
 				{:else}
 					<div class="py-12 text-center">
