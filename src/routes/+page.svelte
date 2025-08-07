@@ -1,52 +1,44 @@
 <script lang="ts">
 	import DirectiveInput from '$lib/components/DirectiveInput.svelte';
-	import { Select } from 'bits-ui';
+	import { Dialog, Select } from 'bits-ui';
 
 	// CSP directive state
 	let directives = $state({
 		'default-src': [] as string[],
+		'connect-src': [] as string[],
+		'font-src': [] as string[],
+		'frame-src': [] as string[],
+		'img-src': [] as string[],
+		'media-src': [] as string[],
+		'object-src': [] as string[],
 		'script-src': [] as string[],
 		'script-src-elem': [] as string[],
 		'script-src-attr': [] as string[],
 		'style-src': [] as string[],
 		'style-src-elem': [] as string[],
-		'style-src-attr': [] as string[],
-		'img-src': [] as string[],
-		'connect-src': [] as string[],
-		'font-src': [] as string[],
-		'object-src': [] as string[],
-		'media-src': [] as string[],
-		'frame-src': [] as string[],
-		'child-src': [] as string[],
-		'worker-src': [] as string[],
-		'manifest-src': [] as string[],
-		'base-uri': [] as string[],
-		'form-action': [] as string[]
+		'frame-ancestors': [] as string[]
 	});
 
 	let generatedCSP = $state('');
 	let selectedDirective = $state<string>('');
+	let importDialogOpen = $state(false);
+	let importCSPText = $state('');
 
 	// Directive configurations
 	const directiveConfigs = [
 		{ key: 'default-src', label: 'Default Source' },
+		{ key: 'connect-src', label: 'Connect Source' },
+		{ key: 'font-src', label: 'Font Source' },
+		{ key: 'frame-src', label: 'Frame Source' },
+		{ key: 'img-src', label: 'Image Source' },
+		{ key: 'media-src', label: 'Media Source' },
+		{ key: 'object-src', label: 'Object Source' },
 		{ key: 'script-src', label: 'Script Source' },
 		{ key: 'script-src-elem', label: 'Script Source Element' },
 		{ key: 'script-src-attr', label: 'Script Source Attribute' },
 		{ key: 'style-src', label: 'Style Source' },
 		{ key: 'style-src-elem', label: 'Style Source Element' },
-		{ key: 'style-src-attr', label: 'Style Source Attribute' },
-		{ key: 'img-src', label: 'Image Source' },
-		{ key: 'connect-src', label: 'Connect Source' },
-		{ key: 'font-src', label: 'Font Source' },
-		{ key: 'object-src', label: 'Object Source' },
-		{ key: 'media-src', label: 'Media Source' },
-		{ key: 'frame-src', label: 'Frame Source' },
-		{ key: 'child-src', label: 'Child Source' },
-		{ key: 'worker-src', label: 'Worker Source' },
-		{ key: 'manifest-src', label: 'Manifest Source' },
-		{ key: 'base-uri', label: 'Base URI' },
-		{ key: 'form-action', label: 'Form Action' }
+		{ key: 'frame-ancestors', label: 'Frame Ancestors' }
 	];
 
 	function addSource(directive: string, source: string) {
@@ -78,6 +70,39 @@
 			directives[key as keyof typeof directives] = [];
 		}
 		generatedCSP = '';
+	}
+
+	function parseCSP(cspString: string) {
+		// Clear existing directives
+		clearAll();
+		
+		// Remove 'Content-Security-Policy:' prefix if present
+		const cleanCSP = cspString.replace(/^Content-Security-Policy:\s*/i, '').trim();
+		
+		// Split by semicolon to get individual directives
+		const directiveParts = cleanCSP.split(';').map(part => part.trim()).filter(part => part);
+		
+		for (const part of directiveParts) {
+			// Split each directive by spaces to get directive name and sources
+			const tokens = part.split(/\s+/);
+			if (tokens.length < 1) continue;
+			
+			const directiveName = tokens[0].toLowerCase();
+			const sources = tokens.slice(1);
+			
+			// Check if this directive exists in our configuration
+			if (directiveName in directives) {
+				directives[directiveName as keyof typeof directives] = sources;
+			}
+		}
+	}
+
+	function handleImportCSP() {
+		if (importCSPText.trim()) {
+			parseCSP(importCSPText.trim());
+			importDialogOpen = false;
+			importCSPText = '';
+		}
 	}
 </script>
 
@@ -172,12 +197,55 @@
 				{/if}
 
 				<div class="mt-6 border-t border-neutral-border pt-6">
-					<button
-						onclick={generateCSP}
-						class="w-full rounded-md border border-success-600 px-6 py-3 font-medium text-neutral-950 transition-colors hover:bg-success-700 focus:ring-2 focus:ring-success-500 focus:ring-offset-2 focus:outline-none cursor-pointer"
-					>
-						Generate CSP
-					</button>
+					<div class="flex gap-3">
+						<Dialog.Root bind:open={importDialogOpen}>
+							<Dialog.Trigger
+								class="flex-1 rounded-md border border-brand-primary bg-transparent px-6 py-3 font-medium text-brand-primary transition-colors hover:bg-brand-primary hover:text-neutral-950 focus:ring-2 focus:ring-brand-primary focus:ring-offset-2 focus:outline-none"
+							>
+								Import CSP
+							</Dialog.Trigger>
+							<Dialog.Portal>
+								<Dialog.Overlay class="fixed inset-0 bg-black/50 z-40" />
+								<Dialog.Content
+									class="fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-lg border border-neutral-border bg-neutral-50 p-6 shadow-lg"
+								>
+									<Dialog.Title class="text-lg font-semibold text-default-font mb-2">
+										Import Existing CSP
+									</Dialog.Title>
+									<Dialog.Description class="text-sm text-subtext-color mb-4">
+										Paste your existing Content Security Policy below to import and edit it.
+									</Dialog.Description>
+									
+									<textarea
+										bind:value={importCSPText}
+										placeholder="Paste your CSP here...\n\nExample:\ndefault-src 'self'; script-src 'self' https://example.com; style-src 'self' 'unsafe-inline';"
+										class="w-full h-32 rounded-md border border-neutral-border bg-neutral-100 px-3 py-2 text-sm text-default-font placeholder:text-neutral-400 resize-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary focus:outline-none"
+									></textarea>
+									
+									<div class="flex justify-end gap-3 mt-6">
+										<Dialog.Close
+											class="px-4 py-2 text-sm font-medium text-subtext-color hover:text-default-font transition-colors focus:outline-none"
+										>
+											Cancel
+										</Dialog.Close>
+										<button
+											onclick={handleImportCSP}
+											class="px-4 py-2 text-sm font-medium bg-brand-primary text-neutral-950 rounded-md hover:bg-brand-700 focus:ring-2 focus:ring-brand-primary focus:ring-offset-2 focus:outline-none transition-colors"
+										>
+											Import
+										</button>
+									</div>
+								</Dialog.Content>
+							</Dialog.Portal>
+						</Dialog.Root>
+						
+						<button
+							onclick={generateCSP}
+							class="flex-1 rounded-md bg-success-600 px-6 py-3 font-medium text-neutral-950 transition-colors hover:bg-success-700 focus:ring-2 focus:ring-success-500 focus:ring-offset-2 focus:outline-none"
+						>
+							Generate CSP
+						</button>
+					</div>
 				</div>
 			</div>
 
