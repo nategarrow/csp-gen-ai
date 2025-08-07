@@ -342,12 +342,12 @@
 								onAdd={(source: string) => addSource(config.key, source)}
 								onRemove={(index: number) => removeSource(config.key, index)}
 								truncated={false}
-                {selectedDirective}
+								{selectedDirective}
 							/>
 							{#if !defaultDirectiveConfigs.some((defaultConfig) => defaultConfig.key === config.key)}
 								<button
 									type="button"
-									class="absolute top								onAdd={(source) => addSource(config.key, source)}
+									class="top absolute onAdd={(source) => addSource(config.key, source)}
 								onRemove={(index) => removeSource(config.key, index)}
 ustom directive"
 									onclick={() => removeCustomDirective(config.key)}
@@ -536,7 +536,9 @@ ustom directive"
 							Content-Security-Policy Header:
 						</div>
 						<pre
-							class="overflow-x-auto rounded-md border border-neutral-border bg-neutral-100 p-4 font-monospace-body text-sm break-all whitespace-pre-wrap text-default-font">{generatedCSP}</pre>
+							class="max-h-192 overflow-x-auto rounded-md border border-neutral-border bg-neutral-100 p-4 font-monospace-body text-sm break-all whitespace-pre-wrap text-default-font">
+              {generatedCSP}
+            </pre>
 					</div>
 
 					<div class="mb-4">
