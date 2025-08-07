@@ -1,6 +1,8 @@
 <script lang="ts">
 	import DirectiveInput from '$lib/components/DirectiveInput.svelte';
 	import { Dialog, Select } from 'bits-ui';
+	import { browser } from '$app/environment';
+	import { onMount } from 'svelte';
 
 	// CSP directive state
 	let directives = $state({
@@ -44,16 +46,74 @@
 		{ key: 'frame-ancestors', label: 'Frame Ancestors' }
 	]);
 
+	// LocalStorage functions
+	const STORAGE_KEY = 'csp-generator-data';
+	const EXPIRATION_DAYS = 7;
+
+	function saveToLocalStorage() {
+		if (!browser) return;
+
+		try {
+			const data = {
+				directives,
+				directiveConfigs,
+				timestamp: Date.now(),
+				expiration: Date.now() + EXPIRATION_DAYS * 24 * 60 * 60 * 1000
+			};
+			localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+		} catch (error) {
+			console.warn('Failed to save to localStorage:', error);
+		}
+	}
+
+	function loadFromLocalStorage() {
+		if (!browser) return false;
+
+		try {
+			const stored = localStorage.getItem(STORAGE_KEY);
+			if (!stored) return false;
+
+			const data = JSON.parse(stored);
+
+			// Check if data has expired
+			if (Date.now() > data.expiration) {
+				localStorage.removeItem(STORAGE_KEY);
+				return false;
+			}
+
+			// Restore data
+			if (data.directives) {
+				Object.assign(directives, data.directives);
+			}
+			if (data.directiveConfigs) {
+				directiveConfigs = data.directiveConfigs;
+			}
+
+			return true;
+		} catch (error) {
+			console.warn('Failed to load from localStorage:', error);
+			localStorage.removeItem(STORAGE_KEY);
+			return false;
+		}
+	}
+
+	// Load data on component mount
+	onMount(() => {
+		loadFromLocalStorage();
+	});
+
 	function addSource(directive: string, source: string) {
 		directives[directive as keyof typeof directives] = [
 			...directives[directive as keyof typeof directives],
 			source
 		];
+		saveToLocalStorage();
 	}
 
 	function removeSource(directive: string, index: number) {
 		const sources = directives[directive as keyof typeof directives];
 		directives[directive as keyof typeof directives] = sources.filter((_, i) => i !== index);
+		saveToLocalStorage();
 	}
 
 	function generateCSP() {
@@ -73,6 +133,7 @@
 			directives[key as keyof typeof directives] = [];
 		}
 		generatedCSP = '';
+		saveToLocalStorage();
 	}
 
 	function parseCSP(cspString: string) {
@@ -132,6 +193,9 @@
 				...directiveConfigs,
 				{ key: directiveKey, label: newDirectiveLabel.trim() }
 			];
+
+			// Save to localStorage
+			saveToLocalStorage();
 
 			// Reset form
 			newDirectiveLabel = '';
