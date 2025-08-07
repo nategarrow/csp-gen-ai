@@ -354,8 +354,8 @@
 							{#if !defaultDirectiveConfigs.some((defaultConfig) => defaultConfig.key === config.key)}
 								<button
 									type="button"
-									class="top absolute onAdd={(source) => addSource(config.key, source)}
-								onRemove={(index) => removeSource(config.key, index)}
+									class="top absolute onAdd={(source: string) => addSource(config.key, source)}
+								onRemove={(index: number) => removeSource(config.key, index)}
 ustom directive"
 									onclick={() => removeCustomDirective(config.key)}
 								>
