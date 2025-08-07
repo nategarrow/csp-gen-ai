@@ -135,7 +135,7 @@
 			}
 		}
 
-		generatedCSP = cspParts.join('; ');
+		generatedCSP = cspParts.join('; ').trim();
 	}
 
 	function clearAll() {
@@ -542,16 +542,12 @@ ustom directive"
 						<div class="mb-2 block text-sm font-medium text-subtext-color">
 							Content-Security-Policy Header:
 						</div>
-						<pre
-							class="max-h-192 overflow-x-auto rounded-md border border-neutral-border bg-neutral-100 p-4 font-monospace-body text-sm break-all whitespace-pre-wrap text-default-font">
-              {generatedCSP}
-            </pre>
+						<pre class="max-h-192 overflow-x-auto rounded-md border border-neutral-border bg-neutral-100 p-4 font-monospace-body text-sm break-all whitespace-pre-wrap text-default-font">{generatedCSP.trim()}</pre>
 					</div>
 
 					<div class="mb-4">
 						<div class="mb-2 block text-sm font-medium text-subtext-color">HTML Meta Tag:</div>
-						<pre
-							class="max-h-192 overflow-x-auto rounded-md border border-neutral-border bg-neutral-100 p-4 font-monospace-body text-sm break-all whitespace-pre-wrap text-default-font">&lt;meta http-equiv="Content-Security-Policy" content="{generatedCSP}"&gt;</pre>
+						<pre class="max-h-192 overflow-x-auto rounded-md border border-neutral-border bg-neutral-100 p-4 font-monospace-body text-sm break-all whitespace-pre-wrap text-default-font">&lt;meta http-equiv="Content-Security-Policy" content="{generatedCSP.trim()}"&gt;</pre>
 					</div>
 				{:else}
 					<div class="py-12 text-center">
