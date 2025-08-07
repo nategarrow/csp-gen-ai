@@ -1,38 +1,19 @@
-# sv
+# CSP Generator
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+A web-based Content Security Policy (CSP) generator. This app provides a simple and easy-to-use interface for generating CSP headers.
 
-## Creating a project
+## Features
 
-If you're seeing this, you've probably already done this step. Congrats!
+* Add, edit and remove CSP directives
+* Generate CSP headers and HTML meta tags
+* Supports all standard CSP directives
 
-```sh
-# create a new project in the current directory
-npx sv create
+## Installation
 
-# create a new project in my-app
-npx sv create my-app
-```
+To start using this app, follow these steps:
 
-## Developing
+1. Clone the repository
+2. Install dependencies with `npm install` or `yarn`
+3. Start the development server with `npm run dev`
+4. Open your web browser and navigate to `http://localhost:5173`
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Building
-
-To create a production version of your app:
-
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
